@@ -1,0 +1,178 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+import seaborn as sns
+
+#%% Splitting x and y data 
+App_train=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\application_train.csv")
+bu=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\bureau.csv")
+bu_bal=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\bureau_balance.csv")
+prev_app=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\previous_application.csv")
+pos_cash_bal=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\POS_CASH_balance.csv")
+cc_bal=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\credit_card_balance.csv")
+inst_paym=pd.read_csv("E:\\ANALYTICS\\Python\\Home Credit Default\\Data\\installments_payments.csv")
+
+df=App_train[0:20000]
+bu_=bu[0:20000]
+bu_bal_=bu_bal[0:20000]
+prev_app_=prev_app[0:20000]
+pos_cash_bal_=pos_cash_bal[0:20000]
+cc_bal_=cc_bal[0:20000]
+inst_paym_=inst_paym[0:20000]
+
+
+df_y=df['TARGET']
+df_x=df.drop(columns='TARGET')
+df.head(5)
+
+#%% EDA
+
+a=df.info()
+#We see that there are 16 object type columns that would be strings, need to convert to numbers 
+df.index
+df.values
+
+df.index[0]
+df.values[1,2]
+df.values[1]
+
+df.select_dtypes('object').apply(pd.Series.nunique, axis=0)
+df[df['SK_ID_CURR']==100002]
+df['NAME_CONTRACT_TYPE'].head()
+df['NAME_CONTRACT_TYPE'].unique()
+df['NAME_CONTRACT_TYPE'].nunique()
+df_y.value_counts()
+type(df_y)
+
+#%% Plotting graphs
+# for calculating number of each type of contract
+
+
+temp=pd.DataFrame(df['NAME_CONTRACT_TYPE'].value_counts())
+temp.describe()
+temp.info()
+temp.head()
+temp
+temp.index
+type(temp)
+temp.values
+sns.set()
+# for calculating ratio of defaults for each type of contract
+gp=df[['TARGET']].groupby(df['NAME_CONTRACT_TYPE']).mean()
+type(gp)
+type(df['TARGET'])
+type(df[['TARGET']])
+gp.index
+gp['TARGET']
+gp.values
+
+
+
+#Code For Categorical variables - count of each category and 
+#percentage defaults for each category 
+fig=plt.figure()
+ax1=fig.add_subplot(1,2,1)
+sns.countplot(ax=ax1,x='NAME_CONTRACT_TYPE', data=df)  
+'''for ratio of each type of fetaure'''
+ax2=fig.add_subplot(1,2,2)
+'''for % of defaults for each type of fetaure'''
+sns.barplot(ax=ax2,data=df, x='NAME_CONTRACT_TYPE',y='TARGET')
+
+
+
+#Code For Continuous variables - count of each category and
+#how distribution changes for both TARGET values
+t0=df[df['TARGET']!=0]
+t1=df[df['TARGET']==0]
+sns.kdeplot(t1['AMT_GOODS_PRICE'])
+sns.kdeplot(t0['AMT_GOODS_PRICE'])
+plt.show()
+
+
+#%%
+def cat_var(ar,df):
+    for i in ar:
+        fig=plt.figure()
+        ax1=fig.add_subplot(1,2,1)
+        ax2=fig.add_subplot(1,2,2)
+        sns.countplot(ax=ax1,x=df[i], data=df)  
+        '''for ratio of each type of fetaure'''
+        '''for % of defaults for each type of fetaure'''
+        sns.barplot(ax=ax2,data=df, x=df[i],y='TARGET')
+        plt.show()
+
+
+#Code For Continuous variables - count of each category and
+#how distribution changes for both TARGET values
+def cont_var(re):
+    t0=App_train[App_train['TARGET']!=0]
+    t1=App_train[App_train['TARGET']==0]   
+    for k in re:
+        sns.kdeplot(t1[k])
+        sns.kdeplot(t0[k])
+        plt.show()
+
+#%%
+
+
+#var=df.columns.values
+var1=df.select_dtypes('int64')
+var1.shape
+var2=df.select_dtypes('object')
+var2.shape
+var3=df.select_dtypes('float')
+var3.shape
+var_cont=var3.columns.values
+type(var3.columns.values)
+type(var3.columns)
+var_cat=pd.concat([var1,var2], axis=1)
+var_cat.shape
+
+var=var2.columns.values
+
+cat_var(['NAME_CONTRACT_TYPE','CODE_GENDER','FLAG_OWN_CAR',\
+         'FLAG_OWN_REALTY','CNT_CHILDREN'])
+
+cat_var(['AMT_INCOME_TOTAL_CAT'], App_train)
+
+cont_var(['AMT_INCOME_TOTAL','AMT_CREDIT','AMT_ANNUITY'])
+cont_var(['AMT_INCOME_TOTAL'])
+
+cont_var(var_cont)
+
+#%%
+#Diagnosing Income field by converting income to categorical variable
+App_train['AMT_INCOME_TOTAL'].describe()
+App_train[App_train['AMT_INCOME_TOTAL']>200000].shape
+App_train.shape
+
+
+App_train['AMT_INCOME_TOTAL_CAT']='a'
+App_train.loc[App_train['AMT_INCOME_TOTAL']>200000,'AMT_INCOME_TOTAL_CAT']='High'
+App_train.loc[(App_train['AMT_INCOME_TOTAL']<=200000) & (App_train['AMT_INCOME_TOTAL']>=100000),'AMT_INCOME_TOTAL_CAT']='Medium'
+App_train.loc[App_train['AMT_INCOME_TOTAL']<100000,'AMT_INCOME_TOTAL_CAT']='Low'
+
+# We observe that there's no variance with defaults in case of high, low income 
+
+#%%
+a_b_m=pd.merge(df,bu_c,how='left', on='SK_ID_CURR')
+a_b_m.head(5)
+
+#App+bureau
+app_bu=pd.merge(App_train,bu,how='left', on='SK_ID_CURR')
+app_bu1=app_bu[0:20000]
+
+#App_bu+Bureau Balance
+#app_bu_bubal=pd.merge(app_bu,bu_bal,how='left',on='SK_BUREAU_ID')
+
+App_bu_prevapp=pd.merge(app_bu,prev_app,how='left', on='SK_ID_CURR')
+
+
+#%% Modeling for prediction
+X_train,X_test,y_train,y_test=train_test_split(df_x,df_y, test_size=.27, random_state=1)
+
+rf=RandomForestClassifier()
+rf.fit(X_train,y_train)
